@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SISSO &mdash; Panel de Plataforma</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+:root{
+  --bg: #0b0d10;
+  --bg2: #14171c;
+  --bg3: #1b1f26;
+  --line: #262b33;
+  --amber: #e8a23d;
+  --amber-dim: #4d3a1f;
+  --text: #e7e9ec;
+  --text2: #9aa1ad;
+  --text3: #5d6470;
+  --green: #4ade80;
+  --red: #f87171;
+  --mono: 'SF Mono', 'JetBrains Mono', 'Consolas', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.5;min-height:100vh}
+code, .mono{font-family:var(--mono)}
+
+/* ---------- LOGIN GATE ---------- */
+#gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate-box{width:100%;max-width:380px}
+.gate-mark{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;margin-bottom:6px}
+.gate-title{font-size:22px;font-weight:700;margin-bottom:4px}
+.gate-sub{color:var(--text2);font-size:13px;margin-bottom:28px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.field input{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:11px 12px;color:var(--text);font-size:14px;outline:none;font-family:var(--sans)}
+.field input:focus{border-color:var(--amber)}
+.pw-wrap{position:relative}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer;font-size:12px;padding:4px}
+.pw-toggle:hover{color:var(--text2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:6px;padding:11px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s;font-family:var(--sans)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-amber{background:var(--amber);color:#1a1408}
+.btn-amber:hover:not(:disabled){opacity:.88}
+.btn-ghost{background:var(--bg2);color:var(--text2);border:1px solid var(--line)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-danger{background:transparent;color:var(--red);border:1px solid #4a2626}
+.btn-danger:hover{background:#1f1414}
+.btn-block{width:100%}
+.gate-status{font-size:12px;color:var(--text2);text-align:center;margin-top:14px;min-height:16px}
+.gate-status.err{color:var(--red)}
+
+/* ---------- APP SHELL ---------- */
+#app{display:none}
+.topbar{border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+.topbar-id{display:flex;align-items:center;gap:10px}
+.topbar-mark{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase}
+.topbar-name{font-size:13px;color:var(--text2)}
+.topbar-actions{display:flex;align-items:center;gap:12px}
+.topbar-actions .btn{padding:8px 14px;font-size:12px}
+
+.wrap{max-width:1100px;margin:0 auto;padding:32px 28px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.page-title{font-size:20px;font-weight:700}
+.page-sub{color:var(--text2);font-size:13px;margin-top:3px}
+
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:28px}
+.stat{background:var(--bg2);padding:18px 20px}
+.stat-num{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--amber)}
+.stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-top:4px}
+
+.empresas-list{display:flex;flex-direction:column;gap:10px}
+.empresa-card{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:18px 20px}
+.empresa-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.empresa-nombre{font-size:15px;font-weight:700}
+.empresa-meta{font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:4px}
+.empresa-badges{display:flex;gap:6px;align-items:center}
+.badge{font-size:11px;padding:3px 9px;border-radius:99px;font-weight:600}
+.badge-on{background:#16341f;color:var(--green)}
+.badge-off{background:#3a1c1c;color:var(--red)}
+.badge-plan{background:var(--bg3);color:var(--text2);font-family:var(--mono)}
+
+.admin-row{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.admin-info{display:flex;flex-direction:column;gap:2px}
+.admin-nombre{font-size:13px;font-weight:600}
+.admin-email{font-family:var(--mono);font-size:11px;color:var(--text2)}
+.admin-actions{display:flex;gap:8px}
+.admin-actions .btn{padding:6px 12px;font-size:11px}
+.sin-admin{font-size:12px;color:var(--text3);font-style:italic;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-icon{font-size:32px;margin-bottom:10px}
+
+/* ---------- MODAL ---------- */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--line);border-radius:10px;width:100%;max-width:440px;padding:24px;max-height:88vh;overflow-y:auto}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text2);margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;margin-top:18px}
+.modal-actions .btn{flex:1}
+.result-box{background:#16341f;border:1px solid #214a2c;border-radius:8px;padding:16px;margin-bottom:16px}
+.result-box.danger{background:#3a1c1c;border-color:#4a2626}
+.result-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.result-value{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--text)}
+.copy-hint{font-size:11px;color:var(--text3);margin-top:10px}
+
+@media (max-width:640px){
+  .topbar{padding:14px 16px}
+  .wrap{padding:24px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ GATE: LOGIN DEL SUPERADMIN ============ -->
+<div id="gate">
+  <div class="gate-box">
+    <div class="gate-mark">SISSO &middot; Plataforma</div>
+    <div class="gate-title">Panel de control</div>
+    <div class="gate-sub">Acceso exclusivo para el administrador de la plataforma.</div>
+
+    <div class="field">
+      <label>Correo electronico</label>
+      <input id="gate-email" type="email" autocomplete="username" placeholder="tu@dominio.com">
+    </div>
+    <div class="field">
+      <label>Contrasena</label>
+      <div class="pw-wrap">
+        <input id="gate-password" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter'){gateLogin();}">
+        <button type="button" class="pw-toggle" onclick="togglePw('gate-password', this)">Ver</button>
+      </div>
+    </div>
+    <button class="btn btn-amber btn-block" id="gate-btn" onclick="gateLogin()">Entrar al panel</button>
+    <div class="gate-status" id="gate-status"></div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-id">
+      <span class="topbar-mark">SISSO</span>
+      <span class="topbar-name" id="topbar-nombre"></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-amber" onclick="abrirModalNuevaEmpresa()">+ Nueva empresa</button>
+      <button class="btn btn-ghost" onclick="cerrarSesion()">Salir</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Empresas registradas</div>
+        <div class="page-sub">Cree empresas nuevas y administre el acceso de cada administrador.</div>
+      </div>
+    </div>
+
+    <div class="stats-row" id="stats-row"></div>
+
+    <div id="empresas-container">
+      <div class="empty">Cargando empresas...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: NUEVA EMPRESA ============ -->
+<div class="modal-overlay" id="modal-nueva-empresa">
+  <div class="modal">
+    <div id="nueva-empresa-form">
+      <div class="modal-title">Nueva empresa</div>
+      <div class="modal-sub">Se creara la organizacion y su primer usuario administrador.</div>
+
+      <div class="field">
+        <label>Nombre de la empresa</label>
+        <input id="ne-nombre" type="text" placeholder="Ej: Fabrica Textil XYZ">
+      </div>
+      <div class="field">
+        <label>RUC / NIT (opcional)</label>
+        <input id="ne-ruc" type="text" placeholder="1790012345001">
+      </div>
+      <div class="field">
+        <label>Nombre del administrador</label>
+        <input id="ne-admin-nombre" type="text" placeholder="Ej: Maria Lopez">
+      </div>
+      <div class="field">
+        <label>Correo del administrador</label>
+        <input id="ne-admin-email" type="email" placeholder="admin@empresa.com">
+      </div>
+      <div class="gate-status" id="ne-status"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="cerrarModalNuevaEmpresa()">Cancelar</button>
+        <button class="btn btn-amber" id="ne-confirm-btn" onclick="confirmarNuevaEmpresa()">Crear empresa</button>
+      </div>
+    </div>
+
+    <div id="nueva-empresa-exito" style="display:none">
+      <div class="modal-title">Empresa creada</div>
+      <div class="modal-sub">Comparta estas credenciales con el administrador. No se mostraran de nuevo.</div>
+      <div class="result-box">
+        <div class="result-label">Codigo de organizacion</div>
+        <div class="result-value" id="exito-codigo"></div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">Correo</div>
+        <div class="result-value" id="exito-email" style="font-size:13px"></div>
+      </div>
+      <div class="result-box">
+        <div class="result-label">Contrasena temporal</div>
+        <div class="result-value" id="exito-password"></div>
+      </div>
+      <div class="copy-hint">Recomiende al administrador cambiar esta contrasena despues de su primer ingreso.</div>
+      <div class="modal-actions">
+        <button class="btn btn-amber btn-block" onclick="cerrarModalNuevaEmpresa()">Listo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: RESETEAR CONTRASENA ============ -->
+<div class="modal-overlay" id="modal-reset-password">
+  <div class="modal">
+    <div id="reset-password-confirm">
+      <div class="modal-title">Resetear contrasena</div>
+      <div class="modal-sub" id="reset-sub"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="cerrarModalReset()">Cancelar</button>
+        <button class="btn btn-amber" id="reset-confirm-btn" onclick="confirmarReset()">Generar nueva contrasena</button>
+      </div>
+    </div>
+    <div id="reset-password-exito" style="display:none">
+      <div class="modal-title">Contrasena actualizada</div>
+      <div class="modal-sub">Comparta esta contrasena temporal con el administrador.</div>
+      <div class="result-box">
+        <div class="result-label">Nueva contrasena</div>
+        <div class="result-value" id="reset-exito-password"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-amber btn-block" onclick="cerrarModalReset()">Listo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Configuracion
+// ============================================================
+var API_BASE_URL = window.SISSO_API_BASE_URL || 'https://sissso-backend.onrender.com/api';
+var sessionTokens = { accessToken: null, refreshToken: null };
+var currentUser = null;
+var usuarioIdParaReset = null;
+
+function togglePw(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Ocultar'; }
+  else { input.type = 'password'; btn.textContent = 'Ver'; }
+}
+
+// ============================================================
+// Login del superadmin
+// ============================================================
+async function gateLogin() {
+  var email = document.getElementById('gate-email').value.trim();
+  var password = document.getElementById('gate-password').value;
+  var statusEl = document.getElementById('gate-status');
+  var btn = document.getElementById('gate-btn');
+
+  if (!email || !password) {
+    statusEl.textContent = 'Ingrese su correo y contrasena.';
+    statusEl.className = 'gate-status err';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Verificando...';
+  statusEl.className = 'gate-status';
+
+  try {
+    var resp = await fetch(API_BASE_URL + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    });
+    var data = await resp.json();
+
+    if (!resp.ok) {
+      statusEl.textContent = data.error || 'Credenciales invalidas.';
+      statusEl.className = 'gate-status err';
+      btn.disabled = false;
+      return;
+    }
+    if (data.usuario.rol !== 'superadmin') {
+      statusEl.textContent = 'Esta cuenta no tiene permisos de plataforma.';
+      statusEl.className = 'gate-status err';
+      btn.disabled = false;
+      return;
+    }
+
+    sessionTokens.accessToken = data.accessToken;
+    sessionTokens.refreshToken = data.refreshToken;
+    currentUser = data.usuario;
+
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('topbar-nombre').textContent = currentUser.nombreCompleto;
+    cargarEmpresas();
+  } catch (err) {
+    console.error('Error de login:', err);
+    statusEl.textContent = 'No se pudo conectar con el servidor.';
+    statusEl.className = 'gate-status err';
+    btn.disabled = false;
+  }
+}
+
+function cerrarSesion() {
+  if (!confirm('Cerrar sesion del panel?')) return;
+  if (sessionTokens.refreshToken) {
+    fetch(API_BASE_URL + '/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionTokens.accessToken },
+      body: JSON.stringify({ refreshToken: sessionTokens.refreshToken })
+    }).catch(function() {});
+  }
+  sessionTokens = { accessToken: null, refreshToken: null };
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('gate').style.display = 'flex';
+  document.getElementById('gate-email').value = '';
+  document.getElementById('gate-password').value = '';
+  document.getElementById('gate-status').textContent = '';
+  document.getElementById('gate-btn').disabled = false;
+}
+
+/**
+ * Llama al backend con el token actual. Si expiro, lo refresca
+ * una vez automaticamente.
+ */
+async function apiFetch(path, options) {
+  options = options || {};
+  options.headers = options.headers || {};
+  options.headers['Authorization'] = 'Bearer ' + sessionTokens.accessToken;
+  if (options.body && !options.headers['Content-Type']) {
+    options.headers['Content-Type'] = 'application/json';
+  }
+  var resp = await fetch(API_BASE_URL + path, options);
+  if (resp.status === 401 && sessionTokens.refreshToken) {
+    var refreshResp = await fetch(API_BASE_URL + '/auth/refrescar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: sessionTokens.refreshToken })
+    });
+    if (refreshResp.ok) {
+      var refreshData = await refreshResp.json();
+      sessionTokens.accessToken = refreshData.accessToken;
+      options.headers['Authorization'] = 'Bearer ' + sessionTokens.accessToken;
+      resp = await fetch(API_BASE_URL + path, options);
+    } else {
+      cerrarSesion();
+      throw new Error('Sesion expirada.');
+    }
+  }
+  return resp;
+}
+
+// ============================================================
+// Listado de empresas
+// ============================================================
+var empresasCache = [];
+
+async function cargarEmpresas() {
+  var container = document.getElementById('empresas-container');
+  try {
+    var resp = await apiFetch('/superadmin/empresas', { method: 'GET' });
+    var data = await resp.json();
+    if (!resp.ok) {
+      container.innerHTML = '<div class="empty">No se pudo cargar la lista de empresas.</div>';
+      return;
+    }
+    empresasCache = data.empresas || [];
+    renderStats(empresasCache);
+    renderEmpresas(empresasCache);
+  } catch (err) {
+    console.error('Error al cargar empresas:', err);
+    container.innerHTML = '<div class="empty">No se pudo conectar con el servidor.</div>';
+  }
+}
+
+function renderStats(empresas) {
+  var totalEmpresas = empresas.length;
+  var activas = empresas.filter(function(e) { return e.activa; }).length;
+  var totalAdmins = empresas.reduce(function(acc, e) { return acc + e.administradores.length; }, 0);
+  var sinAdmin = empresas.filter(function(e) { return e.administradores.length === 0; }).length;
+
+  document.getElementById('stats-row').innerHTML =
+    '<div class="stat"><div class="stat-num">' + totalEmpresas + '</div><div class="stat-label">Empresas</div></div>' +
+    '<div class="stat"><div class="stat-num">' + activas + '</div><div class="stat-label">Activas</div></div>' +
+    '<div class="stat"><div class="stat-num">' + totalAdmins + '</div><div class="stat-label">Administradores</div></div>' +
+    '<div class="stat"><div class="stat-num">' + sinAdmin + '</div><div class="stat-label">Sin administrador</div></div>';
+}
+
+function formatearFecha(iso) {
+  if (!iso) return 'Nunca';
+  var d = new Date(iso);
+  return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function renderEmpresas(empresas) {
+  var container = document.getElementById('empresas-container');
+  if (!empresas.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">&mdash;</div>Aun no hay empresas registradas.<br>Cree la primera con el boton "+ Nueva empresa".</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="empresas-list">' + empresas.map(function(e) {
+    var badgeEstado = e.activa ? '<span class="badge badge-on">Activa</span>' : '<span class="badge badge-off">Inactiva</span>';
+    var adminsHtml = e.administradores.length
+      ? e.administradores.map(function(a) {
+          var accionBtn = a.activo
+            ? '<button class="btn btn-danger" onclick="toggleAdminEstado(\'' + a.id + '\', false)">Revocar acceso</button>'
+            : '<button class="btn btn-ghost" onclick="toggleAdminEstado(\'' + a.id + '\', true)">Reactivar</button>';
+          return '<div class="admin-row">' +
+            '<div class="admin-info"><span class="admin-nombre">' + a.nombre_completo + (a.activo ? '' : ' <span class="badge badge-off" style="margin-left:6px">Acceso revocado</span>') + '</span>' +
+            '<span class="admin-email">' + a.email + ' &middot; ultimo ingreso: ' + formatearFecha(a.ultimo_login) + '</span></div>' +
+            '<div class="admin-actions">' + accionBtn + '<button class="btn btn-ghost" onclick="abrirModalReset(\'' + a.id + '\', \'' + a.nombre_completo.replace(/'/g, "\\'") + '\')">Resetear contrasena</button></div>' +
+            '</div>';
+        }).join('')
+      : '<div class="sin-admin">Esta empresa no tiene un administrador activo.</div>';
+
+    return '<div class="empresa-card">' +
+      '<div class="empresa-top">' +
+        '<div><div class="empresa-nombre">' + e.nombre + '</div><div class="empresa-meta">' + e.codigo + (e.ruc_nit ? ' &middot; ' + e.ruc_nit : '') + ' &middot; creada ' + formatearFecha(e.creado_en) + '</div></div>' +
+        '<div class="empresa-badges">' + badgeEstado + '<span class="badge badge-plan">' + e.plan + '</span></div>' +
+      '</div>' +
+      adminsHtml +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+// ============================================================
+// Crear nueva empresa
+// ============================================================
+function abrirModalNuevaEmpresa() {
+  document.getElementById('modal-nueva-empresa').classList.add('open');
+  document.getElementById('nueva-empresa-form').style.display = 'block';
+  document.getElementById('nueva-empresa-exito').style.display = 'none';
+  ['ne-nombre', 'ne-ruc', 'ne-admin-nombre', 'ne-admin-email'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('ne-status').textContent = '';
+  document.getElementById('ne-confirm-btn').disabled = false;
+}
+
+function cerrarModalNuevaEmpresa() {
+  document.getElementById('modal-nueva-empresa').classList.remove('open');
+  cargarEmpresas();
+}
+
+async function confirmarNuevaEmpresa() {
+  var nombreEmpresa = document.getElementById('ne-nombre').value.trim();
+  var ruc = document.getElementById('ne-ruc').value.trim();
+  var nombreAdmin = document.getElementById('ne-admin-nombre').value.trim();
+  var email = document.getElementById('ne-admin-email').value.trim();
+  var statusEl = document.getElementById('ne-status');
+  var btn = document.getElementById('ne-confirm-btn');
+
+  if (!nombreEmpresa || !nombreAdmin || !email) {
+    statusEl.textContent = 'Complete los campos obligatorios.';
+    statusEl.className = 'gate-status err';
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Creando empresa...';
+  statusEl.className = 'gate-status';
+
+  try {
+    var resp = await apiFetch('/superadmin/empresas', {
+      method: 'POST',
+      body: JSON.stringify({ nombreEmpresa: nombreEmpresa, rucNit: ruc || undefined, nombreAdmin: nombreAdmin, email: email })
+    });
+    var data = await resp.json();
+
+    if (!resp.ok) {
+      statusEl.textContent = data.error || 'No se pudo crear la empresa.';
+      statusEl.className = 'gate-status err';
+      btn.disabled = false;
+      return;
+    }
+
+    document.getElementById('nueva-empresa-form').style.display = 'none';
+    document.getElementById('nueva-empresa-exito').style.display = 'block';
+    document.getElementById('exito-codigo').textContent = data.organizacion.codigo;
+    document.getElementById('exito-email').textContent = data.usuarioAdmin.email;
+    document.getElementById('exito-password').textContent = data.passwordTemporal;
+  } catch (err) {
+    console.error('Error al crear empresa:', err);
+    statusEl.textContent = 'No se pudo conectar con el servidor.';
+    statusEl.className = 'gate-status err';
+    btn.disabled = false;
+  }
+}
+
+// ============================================================
+// Activar / revocar acceso de un administrador
+// ============================================================
+async function toggleAdminEstado(usuarioId, nuevoEstado) {
+  var accion = nuevoEstado ? 'reactivar' : 'revocar el acceso de';
+  if (!confirm('Esta seguro que desea ' + accion + ' este administrador?')) return;
+
+  try {
+    var resp = await apiFetch('/superadmin/usuarios/' + usuarioId + '/estado', {
+      method: 'PATCH',
+      body: JSON.stringify({ activo: nuevoEstado })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      alert('No se pudo actualizar el estado: ' + (data.error || 'Error desconocido.'));
+      return;
+    }
+    cargarEmpresas();
+  } catch (err) {
+    console.error('Error al cambiar estado:', err);
+    alert('No se pudo conectar con el servidor.');
+  }
+}
+
+// ============================================================
+// Resetear contrasena de un administrador
+// ============================================================
+function abrirModalReset(usuarioId, nombre) {
+  usuarioIdParaReset = usuarioId;
+  document.getElementById('reset-sub').textContent = 'Se generara una contrasena temporal nueva para ' + nombre + '. La actual dejara de funcionar.';
+  document.getElementById('modal-reset-password').classList.add('open');
+  document.getElementById('reset-password-confirm').style.display = 'block';
+  document.getElementById('reset-password-exito').style.display = 'none';
+  document.getElementById('reset-confirm-btn').disabled = false;
+}
+
+function cerrarModalReset() {
+  document.getElementById('modal-reset-password').classList.remove('open');
+  usuarioIdParaReset = null;
+  cargarEmpresas();
+}
+
+async function confirmarReset() {
+  if (!usuarioIdParaReset) return;
+  var btn = document.getElementById('reset-confirm-btn');
+  btn.disabled = true;
+
+  try {
+    var resp = await apiFetch('/superadmin/usuarios/' + usuarioIdParaReset + '/resetear-password', { method: 'POST' });
+    var data = await resp.json();
+    if (!resp.ok) {
+      alert('No se pudo resetear la contrasena: ' + (data.error || 'Error desconocido.'));
+      btn.disabled = false;
+      return;
+    }
+    document.getElementById('reset-password-confirm').style.display = 'none';
+    document.getElementById('reset-password-exito').style.display = 'block';
+    document.getElementById('reset-exito-password').textContent = data.passwordTemporal;
+  } catch (err) {
+    console.error('Error al resetear contrasena:', err);
+    alert('No se pudo conectar con el servidor.');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
