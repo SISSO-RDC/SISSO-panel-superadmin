@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://sissso-backend.onrender.com; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self';">
 <title>SISSO &mdash; Panel de Plataforma</title>
 <meta name="robots" content="noindex, nofollow">
 <style>
@@ -116,23 +117,65 @@ code, .mono{font-family:var(--mono)}
 <!-- ============ GATE: LOGIN DEL SUPERADMIN ============ -->
 <div id="gate">
   <div class="gate-box">
-    <div class="gate-mark">SISSO &middot; Plataforma</div>
-    <div class="gate-title">Panel de control</div>
-    <div class="gate-sub">Acceso exclusivo para el administrador de la plataforma.</div>
+    <div id="gate-paso-credenciales">
+      <div class="gate-mark">SISSO &middot; Plataforma</div>
+      <div class="gate-title">Panel de control</div>
+      <div class="gate-sub">Acceso exclusivo para el administrador de la plataforma.</div>
 
-    <div class="field">
-      <label>Correo electronico</label>
-      <input id="gate-email" type="email" autocomplete="username" placeholder="tu@dominio.com">
-    </div>
-    <div class="field">
-      <label>Contrasena</label>
-      <div class="pw-wrap">
-        <input id="gate-password" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter'){gateLogin();}">
-        <button type="button" class="pw-toggle" onclick="togglePw('gate-password', this)">Ver</button>
+      <div class="field">
+        <label>Correo electronico</label>
+        <input id="gate-email" type="email" autocomplete="username" placeholder="tu@dominio.com">
       </div>
+      <div class="field">
+        <label>Contrasena</label>
+        <div class="pw-wrap">
+          <input id="gate-password" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter'){gateLogin();}">
+          <button type="button" class="pw-toggle" onclick="togglePw('gate-password', this)">Ver</button>
+        </div>
+      </div>
+      <button class="btn btn-amber btn-block" id="gate-btn" onclick="gateLogin()">Entrar al panel</button>
+      <div class="gate-status" id="gate-status"></div>
     </div>
-    <button class="btn btn-amber btn-block" id="gate-btn" onclick="gateLogin()">Entrar al panel</button>
-    <div class="gate-status" id="gate-status"></div>
+
+    <!-- CORREGIDO: este panel nunca tuvo soporte de MFA (ni para
+         verificar el codigo de una cuenta ya configurada, ni para la
+         configuracion inicial obligatoria del rol superadmin -- ver
+         hallazgo GRAVE G5). Antes, si el backend respondia con el
+         flujo de MFA (requiereMfa o MFA_OBLIGATORIO_NO_CONFIGURADO),
+         este codigo intentaba leer data.usuario.rol de una respuesta
+         que no traia "usuario", y la pagina se caia con un error de
+         JS silencioso mostrando solo "No se pudo conectar con el
+         servidor". -->
+    <div id="gate-paso-mfa" style="display:none;">
+      <div class="gate-mark">SISSO &middot; Plataforma</div>
+      <div class="gate-title">Verificacion en 2 pasos</div>
+      <div class="gate-sub">Ingresa el codigo de 6 digitos de tu app de autenticacion.</div>
+
+      <div class="field">
+        <label>Codigo de verificacion</label>
+        <input id="gate-codigo-mfa" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" style="text-align:center;letter-spacing:6px;font-size:18px;" autocomplete="one-time-code" onkeydown="if(event.key==='Enter'){verificarMfaGate();}">
+      </div>
+      <button class="btn btn-amber btn-block" id="gate-btn-mfa" onclick="verificarMfaGate()">Verificar</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="volverAGateCredenciales()">Volver</button>
+      <div class="gate-status" id="gate-status-mfa"></div>
+    </div>
+
+    <div id="gate-paso-mfa-setup" style="display:none;">
+      <div class="gate-mark">SISSO &middot; Plataforma</div>
+      <div class="gate-title">Configurar verificacion en 2 pasos</div>
+      <div class="gate-sub">Tu rol requiere MFA. Escanea este codigo con Google Authenticator, Authy o similar, y confirma con el codigo de 6 digitos.</div>
+
+      <div style="display:flex;justify-content:center;margin-bottom:18px;">
+        <img id="gate-mfa-setup-qr" alt="Codigo QR de MFA" style="width:170px;height:170px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px;">
+      </div>
+      <div class="field">
+        <label>Codigo de 6 digitos</label>
+        <input id="gate-codigo-mfa-setup" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" style="text-align:center;letter-spacing:6px;font-size:18px;" autocomplete="one-time-code" onkeydown="if(event.key==='Enter'){confirmarMfaSetupGate();}">
+      </div>
+      <button class="btn btn-amber btn-block" id="gate-btn-mfa-setup" onclick="confirmarMfaSetupGate()">Activar y continuar</button>
+      <button class="btn btn-ghost btn-block" style="margin-top:8px;" onclick="volverAGateCredenciales()">Cancelar</button>
+      <div class="gate-status" id="gate-status-mfa-setup"></div>
+    </div>
   </div>
 </div>
 
@@ -248,7 +291,7 @@ code, .mono{font-family:var(--mono)}
 // Configuracion
 // ============================================================
 var API_BASE_URL = window.SISSO_API_BASE_URL || 'https://sissso-backend.onrender.com/api';
-var sessionTokens = { accessToken: null, refreshToken: null };
+var sessionTokens = { accessToken: null };
 var currentUser = null;
 var usuarioIdParaReset = null;
 
@@ -261,6 +304,44 @@ function togglePw(inputId, btn) {
 // ============================================================
 // Login del superadmin
 // ============================================================
+var mfaTokenPendienteGate = null;
+
+function mostrarPasoGate(idVisible) {
+  ['gate-paso-credenciales', 'gate-paso-mfa', 'gate-paso-mfa-setup'].forEach(function(id) {
+    document.getElementById(id).style.display = (id === idVisible) ? 'block' : 'none';
+  });
+}
+
+function volverAGateCredenciales() {
+  mfaTokenPendienteGate = null;
+  document.getElementById('gate-status').textContent = '';
+  document.getElementById('gate-status').className = 'gate-status';
+  mostrarPasoGate('gate-paso-credenciales');
+  document.getElementById('gate-btn').disabled = false;
+}
+
+// Aplica la respuesta final de login (accessToken + usuario), sin
+// importar si vino directo de /auth/login, de /auth/mfa/verificar-login
+// o de completar la configuracion obligatoria de MFA.
+function completarEntradaPanel(data) {
+  if (!data.usuario || data.usuario.rol !== 'superadmin') {
+    var statusEl = document.getElementById('gate-status');
+    mostrarPasoGate('gate-paso-credenciales');
+    statusEl.textContent = 'Esta cuenta no tiene permisos de plataforma.';
+    statusEl.className = 'gate-status err';
+    document.getElementById('gate-btn').disabled = false;
+    return;
+  }
+
+  sessionTokens.accessToken = data.accessToken;
+  currentUser = data.usuario;
+
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('topbar-nombre').textContent = currentUser.nombreCompleto;
+  cargarEmpresas();
+}
+
 async function gateLogin() {
   var email = document.getElementById('gate-email').value.trim();
   var password = document.getElementById('gate-password').value;
@@ -278,34 +359,58 @@ async function gateLogin() {
   statusEl.className = 'gate-status';
 
   try {
+    // CORREGIDO: faltaba credentials:'include'. Sin esto, el
+    // navegador ignora por completo la cookie HttpOnly del refresh
+    // token que manda el backend (es cross-site: este panel vive en
+    // sisso-rdc.github.io, el backend en onrender.com). El resultado
+    // era que la sesion nunca podia renovarse sola y se rompia en
+    // silencio cada vez que expiraba el access token (15 min).
     var resp = await fetch(API_BASE_URL + '/auth/login', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     });
     var data = await resp.json();
 
     if (!resp.ok) {
+      // CORREGIDO (hallazgo GRAVE G5): si el rol exige MFA
+      // obligatorio y todavia no esta configurado, el backend
+      // responde 403 con codigo MFA_OBLIGATORIO_NO_CONFIGURADO y un
+      // mfaToken de corta duracion. Antes este panel no distinguia
+      // este caso de un error comun: mostraba el mensaje de error y
+      // se quedaba ahi, sin ninguna forma de configurar el MFA desde
+      // aqui.
+      if (data.codigo === 'MFA_OBLIGATORIO_NO_CONFIGURADO' && data.mfaToken) {
+        mfaTokenPendienteGate = data.mfaToken;
+        btn.disabled = false;
+        statusEl.textContent = '';
+        await iniciarConfiguracionMfaGate();
+        return;
+      }
       statusEl.textContent = data.error || 'Credenciales invalidas.';
       statusEl.className = 'gate-status err';
       btn.disabled = false;
       return;
     }
-    if (data.usuario.rol !== 'superadmin') {
-      statusEl.textContent = 'Esta cuenta no tiene permisos de plataforma.';
-      statusEl.className = 'gate-status err';
+
+    // CORREGIDO (crash reportado: "Cannot read properties of
+    // undefined (reading 'rol')"). Cuando la cuenta YA tiene MFA
+    // configurado, el login no entrega accessToken/usuario todavia:
+    // responde 200 con { requiereMfa: true, mfaToken }, pidiendo el
+    // segundo factor primero. El codigo viejo iba directo a leer
+    // data.usuario.rol sin comprobar esto, y como usuario no
+    // existia en esta respuesta, la pagina se caia ahi mismo.
+    if (data.requiereMfa) {
+      mfaTokenPendienteGate = data.mfaToken;
+      mostrarPasoGate('gate-paso-mfa');
+      document.getElementById('gate-codigo-mfa').value = '';
+      document.getElementById('gate-codigo-mfa').focus();
       btn.disabled = false;
       return;
     }
 
-    sessionTokens.accessToken = data.accessToken;
-    sessionTokens.refreshToken = data.refreshToken;
-    currentUser = data.usuario;
-
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('topbar-nombre').textContent = currentUser.nombreCompleto;
-    cargarEmpresas();
+    completarEntradaPanel(data);
   } catch (err) {
     console.error('Error de login:', err);
     statusEl.textContent = 'No se pudo conectar con el servidor.';
@@ -314,42 +419,172 @@ async function gateLogin() {
   }
 }
 
+async function verificarMfaGate() {
+  var codigo = document.getElementById('gate-codigo-mfa').value.trim();
+  var statusEl = document.getElementById('gate-status-mfa');
+  var btn = document.getElementById('gate-btn-mfa');
+
+  if (!codigo || codigo.length !== 6) {
+    statusEl.textContent = 'Ingresa el codigo de 6 digitos.';
+    statusEl.className = 'gate-status err';
+    return;
+  }
+  if (!mfaTokenPendienteGate) {
+    statusEl.textContent = 'La sesion de verificacion expiro. Vuelve a ingresar tu contrasena.';
+    statusEl.className = 'gate-status err';
+    volverAGateCredenciales();
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Verificando...';
+  statusEl.className = 'gate-status';
+
+  try {
+    var resp = await fetch(API_BASE_URL + '/auth/mfa/verificar-login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken: mfaTokenPendienteGate, codigo: codigo })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      statusEl.textContent = data.error || 'Codigo incorrecto.';
+      statusEl.className = 'gate-status err';
+      btn.disabled = false;
+      return;
+    }
+    mfaTokenPendienteGate = null;
+    completarEntradaPanel(data);
+  } catch (err) {
+    console.error('Error al verificar MFA:', err);
+    statusEl.textContent = 'No se pudo conectar con el servidor.';
+    statusEl.className = 'gate-status err';
+    btn.disabled = false;
+  }
+}
+
+async function iniciarConfiguracionMfaGate() {
+  var statusEl = document.getElementById('gate-status-mfa-setup');
+  statusEl.textContent = '';
+  statusEl.className = 'gate-status';
+  try {
+    var resp = await fetch(API_BASE_URL + '/auth/mfa/iniciar-configuracion', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken: mfaTokenPendienteGate })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      document.getElementById('gate-status').textContent = data.error || 'No se pudo iniciar la configuracion de MFA.';
+      document.getElementById('gate-status').className = 'gate-status err';
+      volverAGateCredenciales();
+      return;
+    }
+    document.getElementById('gate-mfa-setup-qr').src = data.qrCodeDataUrl;
+    mostrarPasoGate('gate-paso-mfa-setup');
+    document.getElementById('gate-codigo-mfa-setup').value = '';
+    document.getElementById('gate-codigo-mfa-setup').focus();
+  } catch (err) {
+    console.error('Error al iniciar configuracion MFA:', err);
+    document.getElementById('gate-status').textContent = 'No se pudo conectar con el servidor.';
+    document.getElementById('gate-status').className = 'gate-status err';
+    volverAGateCredenciales();
+  }
+}
+
+async function confirmarMfaSetupGate() {
+  var codigo = document.getElementById('gate-codigo-mfa-setup').value.trim();
+  var statusEl = document.getElementById('gate-status-mfa-setup');
+  var btn = document.getElementById('gate-btn-mfa-setup');
+
+  if (!codigo || codigo.length !== 6) {
+    statusEl.textContent = 'Ingresa el codigo de 6 digitos.';
+    statusEl.className = 'gate-status err';
+    return;
+  }
+  if (!mfaTokenPendienteGate) {
+    statusEl.textContent = 'La sesion de configuracion expiro. Vuelve a ingresar tu contrasena.';
+    statusEl.className = 'gate-status err';
+    volverAGateCredenciales();
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = 'Activando...';
+  statusEl.className = 'gate-status';
+
+  try {
+    var resp = await fetch(API_BASE_URL + '/auth/mfa/confirmar', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mfaToken: mfaTokenPendienteGate, codigo: codigo })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      statusEl.textContent = data.error || 'Codigo incorrecto. Verifica la hora de tu dispositivo e intenta de nuevo.';
+      statusEl.className = 'gate-status err';
+      btn.disabled = false;
+      return;
+    }
+
+    // MFA activado. Por seguridad no abrimos sesion automaticamente
+    // aqui: se pide ingresar la contrasena de nuevo, y esta vez el
+    // paso normal de verificar-login (con la app ya configurada) la
+    // completa.
+    mfaTokenPendienteGate = null;
+    document.getElementById('gate-password').value = '';
+    volverAGateCredenciales();
+    document.getElementById('gate-status').textContent = 'Verificacion en 2 pasos activada. Vuelve a iniciar sesion con tu contrasena y el codigo de tu app.';
+    document.getElementById('gate-status').className = 'gate-status';
+    document.getElementById('gate-email').focus();
+  } catch (err) {
+    console.error('Error al confirmar MFA:', err);
+    statusEl.textContent = 'No se pudo conectar con el servidor.';
+    statusEl.className = 'gate-status err';
+    btn.disabled = false;
+  }
+}
+
 function cerrarSesion() {
   if (!confirm('Cerrar sesion del panel?')) return;
-  if (sessionTokens.refreshToken) {
-    fetch(API_BASE_URL + '/auth/logout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionTokens.accessToken },
-      body: JSON.stringify({ refreshToken: sessionTokens.refreshToken })
-    }).catch(function() {});
-  }
-  sessionTokens = { accessToken: null, refreshToken: null };
+  fetch(API_BASE_URL + '/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionTokens.accessToken }
+  }).catch(function() {});
+  sessionTokens = { accessToken: null };
   currentUser = null;
+  mfaTokenPendienteGate = null;
   document.getElementById('app').style.display = 'none';
+  volverAGateCredenciales();
   document.getElementById('gate').style.display = 'flex';
   document.getElementById('gate-email').value = '';
   document.getElementById('gate-password').value = '';
-  document.getElementById('gate-status').textContent = '';
-  document.getElementById('gate-btn').disabled = false;
 }
 
 /**
  * Llama al backend con el token actual. Si expiro, lo refresca
- * una vez automaticamente.
+ * una vez automaticamente usando la cookie HttpOnly (ya no depende
+ * de sessionTokens.refreshToken, que nunca llegaba en el body del
+ * login -- ver nota de credentials:'include' mas arriba).
  */
 async function apiFetch(path, options) {
   options = options || {};
   options.headers = options.headers || {};
   options.headers['Authorization'] = 'Bearer ' + sessionTokens.accessToken;
+  options.credentials = 'include';
   if (options.body && !options.headers['Content-Type']) {
     options.headers['Content-Type'] = 'application/json';
   }
   var resp = await fetch(API_BASE_URL + path, options);
-  if (resp.status === 401 && sessionTokens.refreshToken) {
+  if (resp.status === 401) {
     var refreshResp = await fetch(API_BASE_URL + '/auth/refrescar', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: sessionTokens.refreshToken })
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
     });
     if (refreshResp.ok) {
       var refreshData = await refreshResp.json();
