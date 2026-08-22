@@ -29,9 +29,11 @@ code, .mono{font-family:var(--mono)}
 /* ---------- LOGIN GATE ---------- */
 #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .gate-box{width:100%;max-width:380px}
-.gate-mark{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;margin-bottom:6px}
-.gate-title{font-size:22px;font-weight:700;margin-bottom:4px}
-.gate-sub{color:var(--text2);font-size:13px;margin-bottom:28px}
+.gate-logo{display:flex;justify-content:center;margin-bottom:18px}
+.gate-logo img{width:64px;height:64px;object-fit:contain}
+.gate-mark{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase;margin-bottom:6px;text-align:center}
+.gate-title{font-size:22px;font-weight:700;margin-bottom:4px;text-align:center}
+.gate-sub{color:var(--text2);font-size:13px;margin-bottom:28px;text-align:center}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
 .field input{width:100%;background:var(--bg2);border:1px solid var(--line);border-radius:6px;padding:11px 12px;color:var(--text);font-size:14px;outline:none;font-family:var(--sans)}
@@ -55,6 +57,7 @@ code, .mono{font-family:var(--mono)}
 #app{display:none}
 .topbar{border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
 .topbar-id{display:flex;align-items:center;gap:10px}
+.topbar-id img{width:28px;height:28px;object-fit:contain}
 .topbar-mark{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--amber);text-transform:uppercase}
 .topbar-name{font-size:13px;color:var(--text2)}
 .topbar-actions{display:flex;align-items:center;gap:12px}
@@ -89,6 +92,19 @@ code, .mono{font-family:var(--mono)}
 .admin-actions .btn{padding:6px 12px;font-size:11px}
 .sin-admin{font-size:12px;color:var(--text3);font-style:italic;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 
+/* ---------- Suscripcion / plan / suspension total ---------- */
+.org-row{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.org-info{display:flex;flex-direction:column;gap:2px}
+.org-info-linea{font-size:11.5px;color:var(--text2)}
+.org-suspendida-motivo{font-size:11.5px;color:var(--red);margin-top:2px}
+.org-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.org-actions .btn{padding:6px 12px;font-size:11px}
+.select-plan{background:var(--bg2);border:1px solid var(--line);border-radius:6px;color:var(--text);font-size:11px;padding:6px 8px;font-family:var(--sans)}
+.badge-trial{background:var(--amber-dim);color:var(--amber)}
+.badge-vencida{background:#3a1c1c;color:var(--red)}
+.badge-suspendida{background:#3a1c1c;color:var(--red)}
+.badge-activa-sus{background:#16341f;color:var(--green)}
+
 .empty{text-align:center;padding:60px 20px;color:var(--text3)}
 .empty-icon{font-size:32px;margin-bottom:10px}
 
@@ -118,6 +134,7 @@ code, .mono{font-family:var(--mono)}
 <div id="gate">
   <div class="gate-box">
     <div id="gate-paso-credenciales">
+      <div class="gate-logo"><img src="logo.png" alt="SISSO"></div>
       <div class="gate-mark">SISSO &middot; Plataforma</div>
       <div class="gate-title">Panel de control</div>
       <div class="gate-sub">Acceso exclusivo para el administrador de la plataforma.</div>
@@ -147,6 +164,7 @@ code, .mono{font-family:var(--mono)}
          JS silencioso mostrando solo "No se pudo conectar con el
          servidor". -->
     <div id="gate-paso-mfa" style="display:none;">
+      <div class="gate-logo"><img src="logo.png" alt="SISSO"></div>
       <div class="gate-mark">SISSO &middot; Plataforma</div>
       <div class="gate-title">Verificacion en 2 pasos</div>
       <div class="gate-sub">Ingresa el codigo de 6 digitos de tu app de autenticacion.</div>
@@ -161,6 +179,7 @@ code, .mono{font-family:var(--mono)}
     </div>
 
     <div id="gate-paso-mfa-setup" style="display:none;">
+      <div class="gate-logo"><img src="logo.png" alt="SISSO"></div>
       <div class="gate-mark">SISSO &middot; Plataforma</div>
       <div class="gate-title">Configurar verificacion en 2 pasos</div>
       <div class="gate-sub">Tu rol requiere MFA. Escanea este codigo con Google Authenticator, Authy o similar, y confirma con el codigo de 6 digitos.</div>
@@ -183,6 +202,7 @@ code, .mono{font-family:var(--mono)}
 <div id="app">
   <div class="topbar">
     <div class="topbar-id">
+      <img src="logo.png" alt="SISSO">
       <span class="topbar-mark">SISSO</span>
       <span class="topbar-name" id="topbar-nombre"></span>
     </div>
@@ -230,6 +250,14 @@ code, .mono{font-family:var(--mono)}
       <div class="field">
         <label>Correo del administrador</label>
         <input id="ne-admin-email" type="email" placeholder="admin@empresa.com">
+      </div>
+      <div class="field">
+        <label>Plan inicial</label>
+        <select id="ne-plan" class="select-plan" style="width:100%;padding:11px 12px;font-size:14px;">
+          <option value="inicial">Plan Inicial ($39/mes, hasta 10 trabajadores)</option>
+          <option value="crecimiento">Plan Crecimiento ($99/mes, hasta 50 trabajadores)</option>
+          <option value="corporativo">Plan Corporativo ($0.90/trabajador/mes)</option>
+        </select>
       </div>
       <div class="gate-status" id="ne-status"></div>
       <div class="modal-actions">
@@ -282,6 +310,22 @@ code, .mono{font-family:var(--mono)}
       <div class="modal-actions">
         <button class="btn btn-amber btn-block" onclick="cerrarModalReset()">Listo</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: SUSPENDER TODA LA ORGANIZACION (punto 1.b) ============ -->
+<div class="modal-overlay" id="modal-suspension">
+  <div class="modal">
+    <div class="modal-title">Suspender organizacion</div>
+    <div class="modal-sub" id="suspension-sub"></div>
+    <div class="field">
+      <label>Motivo (opcional, queda registrado)</label>
+      <input id="suspension-motivo" type="text" placeholder="Ej: Fin de contrato, pendiente de renovacion">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="cerrarModalSuspension()">Cancelar</button>
+      <button class="btn btn-danger" id="suspension-confirm-btn" onclick="confirmarSuspension()">Suspender ahora</button>
     </div>
   </div>
 </div>
@@ -641,6 +685,14 @@ function formatearFecha(iso) {
   return d.toLocaleDateString('es-EC', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function chipEstadoSuscripcion(e) {
+  if (e.suspendida_manualmente) return '<span class="badge badge-suspendida">Suspendida</span>';
+  if (e.estado_suscripcion === 'trial') return '<span class="badge badge-trial">Trial</span>';
+  if (e.estado_suscripcion === 'vencida') return '<span class="badge badge-vencida">Vencida</span>';
+  if (e.estado_suscripcion === 'activa') return '<span class="badge badge-activa-sus">Al dia</span>';
+  return '';
+}
+
 function renderEmpresas(empresas) {
   var container = document.getElementById('empresas-container');
   if (!empresas.length) {
@@ -663,14 +715,131 @@ function renderEmpresas(empresas) {
         }).join('')
       : '<div class="sin-admin">Esta empresa no tiene un administrador activo.</div>';
 
+    // CORREGIDO (punto 1.b reportado): antes solo se podia revocar
+    // el acceso del ADMINISTRADOR, uno a la vez. Los demas usuarios
+    // de esa empresa (medico, sso, th) seguian con acceso total al
+    // sistema aunque el contrato hubiera terminado. Esta fila nueva
+    // agrega el boton que faltaba: suspende TODA la organizacion de
+    // un clic (usa PATCH /superadmin/empresas/:id/suspension, que
+    // revoca de inmediato las sesiones de TODOS sus usuarios, no
+    // solo bloquea logins futuros).
+    var infoSuscripcion = '<span class="org-info-linea">Plan: <strong>' + (e.plan_nombre || e.plan) + '</strong>' +
+      (e.precio_mensual_usd ? ' ($' + Number(e.precio_mensual_usd).toFixed(2) + '/mes)' : '') + '</span>' +
+      (e.estado_suscripcion === 'trial' && e.fecha_fin_trial ? '<span class="org-info-linea">Trial vence: ' + formatearFecha(e.fecha_fin_trial) + '</span>' : '') +
+      (e.estado_suscripcion === 'activa' && e.fecha_proxima_renovacion ? '<span class="org-info-linea">Proxima renovacion: ' + formatearFecha(e.fecha_proxima_renovacion) + '</span>' : '') +
+      (e.suspendida_manualmente && e.motivo_suspension ? '<span class="org-suspendida-motivo">Motivo: ' + e.motivo_suspension + '</span>' : '');
+
+    var botonSuspension = e.suspendida_manualmente
+      ? '<button class="btn btn-ghost" onclick="reactivarOrganizacion(\'' + e.id + '\', \'' + e.nombre.replace(/'/g, "\\'") + '\')">Reactivar organizacion</button>'
+      : '<button class="btn btn-danger" onclick="abrirModalSuspension(\'' + e.id + '\', \'' + e.nombre.replace(/'/g, "\\'") + '\')">Suspender TODA la organizacion</button>';
+
+    var selectorPlan = '<select class="select-plan" onchange="cambiarPlan(\'' + e.id + '\', this.value)">' +
+      ['inicial', 'crecimiento', 'corporativo'].map(function(cod) {
+        var etiquetas = { inicial: 'Plan Inicial', crecimiento: 'Plan Crecimiento', corporativo: 'Plan Corporativo' };
+        var seleccionado = e.plan_codigo === cod ? ' selected' : '';
+        return '<option value="' + cod + '"' + seleccionado + '>' + etiquetas[cod] + '</option>';
+      }).join('') + '</select>';
+
     return '<div class="empresa-card">' +
       '<div class="empresa-top">' +
         '<div><div class="empresa-nombre">' + e.nombre + '</div><div class="empresa-meta">' + e.codigo + (e.ruc_nit ? ' &middot; ' + e.ruc_nit : '') + ' &middot; creada ' + formatearFecha(e.creado_en) + '</div></div>' +
-        '<div class="empresa-badges">' + badgeEstado + '<span class="badge badge-plan">' + e.plan + '</span></div>' +
+        '<div class="empresa-badges">' + badgeEstado + chipEstadoSuscripcion(e) + '</div>' +
+      '</div>' +
+      '<div class="org-row">' +
+        '<div class="org-info">' + infoSuscripcion + '</div>' +
+        '<div class="org-actions">' + selectorPlan + botonSuspension + '</div>' +
       '</div>' +
       adminsHtml +
     '</div>';
   }).join('') + '</div>';
+}
+
+// ============================================================
+// Suspender / reactivar TODA una organizacion (punto 1.b)
+// ============================================================
+var orgIdParaSuspender = null;
+
+function abrirModalSuspension(orgId, nombre) {
+  orgIdParaSuspender = orgId;
+  document.getElementById('suspension-sub').textContent =
+    'Esto bloqueara el acceso de TODOS los usuarios de "' + nombre + '" (administrador, medico, SSO y TH) de inmediato, incluyendo sesiones ya abiertas. Util, por ejemplo, ante fin de contrato hasta su renovacion.';
+  document.getElementById('suspension-motivo').value = '';
+  document.getElementById('modal-suspension').classList.add('open');
+}
+
+function cerrarModalSuspension() {
+  document.getElementById('modal-suspension').classList.remove('open');
+  orgIdParaSuspender = null;
+}
+
+async function confirmarSuspension() {
+  if (!orgIdParaSuspender) return;
+  var motivo = document.getElementById('suspension-motivo').value.trim();
+  var btn = document.getElementById('suspension-confirm-btn');
+  btn.disabled = true;
+
+  try {
+    var resp = await apiFetch('/superadmin/empresas/' + orgIdParaSuspender + '/suspension', {
+      method: 'PATCH',
+      body: JSON.stringify({ suspender: true, motivo: motivo || undefined })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      alert('No se pudo suspender la organizacion: ' + (data.error || 'Error desconocido.'));
+      btn.disabled = false;
+      return;
+    }
+    cerrarModalSuspension();
+    cargarEmpresas();
+  } catch (err) {
+    console.error('Error al suspender organizacion:', err);
+    alert('No se pudo conectar con el servidor.');
+    btn.disabled = false;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function reactivarOrganizacion(orgId, nombre) {
+  if (!confirm('Reactivar el acceso completo de "' + nombre + '"?')) return;
+  try {
+    var resp = await apiFetch('/superadmin/empresas/' + orgId + '/suspension', {
+      method: 'PATCH',
+      body: JSON.stringify({ suspender: false })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      alert('No se pudo reactivar la organizacion: ' + (data.error || 'Error desconocido.'));
+      return;
+    }
+    cargarEmpresas();
+  } catch (err) {
+    console.error('Error al reactivar organizacion:', err);
+    alert('No se pudo conectar con el servidor.');
+  }
+}
+
+// ============================================================
+// Cambiar el plan de una organizacion
+// ============================================================
+async function cambiarPlan(orgId, planCodigo) {
+  try {
+    var resp = await apiFetch('/superadmin/empresas/' + orgId + '/plan', {
+      method: 'PATCH',
+      body: JSON.stringify({ planCodigo: planCodigo })
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      alert('No se pudo cambiar el plan: ' + (data.error || 'Error desconocido.'));
+      cargarEmpresas();
+      return;
+    }
+    cargarEmpresas();
+  } catch (err) {
+    console.error('Error al cambiar plan:', err);
+    alert('No se pudo conectar con el servidor.');
+    cargarEmpresas();
+  }
 }
 
 // ============================================================
@@ -681,6 +850,7 @@ function abrirModalNuevaEmpresa() {
   document.getElementById('nueva-empresa-form').style.display = 'block';
   document.getElementById('nueva-empresa-exito').style.display = 'none';
   ['ne-nombre', 'ne-ruc', 'ne-admin-nombre', 'ne-admin-email'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('ne-plan').value = 'inicial';
   document.getElementById('ne-status').textContent = '';
   document.getElementById('ne-confirm-btn').disabled = false;
 }
@@ -695,6 +865,7 @@ async function confirmarNuevaEmpresa() {
   var ruc = document.getElementById('ne-ruc').value.trim();
   var nombreAdmin = document.getElementById('ne-admin-nombre').value.trim();
   var email = document.getElementById('ne-admin-email').value.trim();
+  var planCodigo = document.getElementById('ne-plan').value;
   var statusEl = document.getElementById('ne-status');
   var btn = document.getElementById('ne-confirm-btn');
 
@@ -711,7 +882,7 @@ async function confirmarNuevaEmpresa() {
   try {
     var resp = await apiFetch('/superadmin/empresas', {
       method: 'POST',
-      body: JSON.stringify({ nombreEmpresa: nombreEmpresa, rucNit: ruc || undefined, nombreAdmin: nombreAdmin, email: email })
+      body: JSON.stringify({ nombreEmpresa: nombreEmpresa, rucNit: ruc || undefined, nombreAdmin: nombreAdmin, email: email, planCodigo: planCodigo })
     });
     var data = await resp.json();
 
