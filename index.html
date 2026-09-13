@@ -92,6 +92,21 @@ code, .mono{font-family:var(--mono)}
 .admin-actions .btn{padding:6px 12px;font-size:11px}
 .sin-admin{font-size:12px;color:var(--text3);font-style:italic;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 
+/* ---------- Todos los usuarios de la empresa (admin, medico, sso, th) ---------- */
+.usuarios-todos{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.usuarios-todos-titulo{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.usuario-row{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:7px 0}
+.usuario-row + .usuario-row{border-top:1px solid var(--line)}
+.usuario-info{display:flex;flex-direction:column;gap:1px}
+.usuario-nombre{font-size:13px;font-weight:600}
+.usuario-email{font-family:var(--mono);font-size:11px;color:var(--text2)}
+.rol-badge{font-size:10.5px;padding:3px 9px;border-radius:99px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+.rol-admin{background:#3a2c10;color:var(--amber)}
+.rol-medico{background:#0f2e3a;color:#5ec8e6}
+.rol-sso{background:#16341f;color:var(--green)}
+.rol-th{background:#2a1c3a;color:#c79bf0}
+.sin-usuarios{font-size:12px;color:var(--text3);font-style:italic;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+
 /* ---------- Suscripcion / plan / suspension total ---------- */
 .org-row{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .org-info{display:flex;flex-direction:column;gap:2px}
@@ -693,6 +708,18 @@ function chipEstadoSuscripcion(e) {
   return '';
 }
 
+// Escapa HTML para la nueva lista de "todos los usuarios" (defensa
+// en profundidad: esta seccion muestra nombre/email de TODOS los
+// roles de cada empresa, no solo del admin).
+function escaparHtmlSuperadmin(valor) {
+  return String(valor == null ? '' : valor).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+var ROL_ETIQUETAS = { admin: 'Administrador', medico: 'Medico', sso: 'SSO', th: 'Talento Humano' };
+var ROL_CLASES = { admin: 'rol-admin', medico: 'rol-medico', sso: 'rol-sso', th: 'rol-th' };
+
 function renderEmpresas(empresas) {
   var container = document.getElementById('empresas-container');
   if (!empresas.length) {
@@ -714,6 +741,26 @@ function renderEmpresas(empresas) {
             '</div>';
         }).join('')
       : '<div class="sin-admin">Esta empresa no tiene un administrador activo.</div>';
+
+    // Lista de TODOS los usuarios de la empresa (admin, medico, sso,
+    // th), ordenados por el backend en ese orden. El admin ya se
+    // muestra arriba con sus acciones (resetear/revocar); esta
+    // seccion es de solo lectura y cubre tambien a los demas roles,
+    // que antes no aparecian en ningun lado del panel de superadmin.
+    var listaUsuarios = e.usuarios || [];
+    var usuariosHtml = listaUsuarios.length
+      ? '<div class="usuarios-todos"><div class="usuarios-todos-titulo">Todos los usuarios (' + listaUsuarios.length + ')</div>' +
+        listaUsuarios.map(function(u) {
+          var claseRol = ROL_CLASES[u.rol] || 'rol-th';
+          var etiquetaRol = ROL_ETIQUETAS[u.rol] || u.rol;
+          return '<div class="usuario-row">' +
+            '<div class="usuario-info"><span class="usuario-nombre">' + escaparHtmlSuperadmin(u.nombre_completo) + (u.activo ? '' : ' <span class="badge badge-off" style="margin-left:6px">Inactivo</span>') + '</span>' +
+            '<span class="usuario-email">' + escaparHtmlSuperadmin(u.email) + '</span></div>' +
+            '<span class="rol-badge ' + claseRol + '">' + escaparHtmlSuperadmin(etiquetaRol) + '</span>' +
+            '</div>';
+        }).join('') +
+        '</div>'
+      : '<div class="sin-usuarios">Esta empresa aun no tiene usuarios registrados.</div>';
 
     // CORREGIDO (punto 1.b reportado): antes solo se podia revocar
     // el acceso del ADMINISTRADOR, uno a la vez. Los demas usuarios
@@ -750,6 +797,7 @@ function renderEmpresas(empresas) {
         '<div class="org-actions">' + selectorPlan + botonSuspension + '</div>' +
       '</div>' +
       adminsHtml +
+      usuariosHtml +
     '</div>';
   }).join('') + '</div>';
 }
