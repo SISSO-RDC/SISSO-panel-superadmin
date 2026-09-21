@@ -770,8 +770,17 @@ function renderEmpresas(empresas) {
     // un clic (usa PATCH /superadmin/empresas/:id/suspension, que
     // revoca de inmediato las sesiones de TODOS sus usuarios, no
     // solo bloquea logins futuros).
+    // CORREGIDO: el plan Corporativo se cobra por trabajador ($0.90/trabajador/mes),
+    // por lo que su precio_mensual_usd base es 0. PostgreSQL devuelve NUMERIC como
+    // texto ("0.00"), que en JS es truthy, y el panel mostraba "($0.00/mes)".
+    // Ahora se convierte a numero y el Corporativo muestra su tarifa por trabajador.
+    var precioBase = Number(e.precio_mensual_usd);
+    var textoPrecioPlan = e.plan_codigo === 'corporativo'
+      ? ' ($0.90/trabajador/mes)'
+      : (precioBase > 0 ? ' ($' + precioBase.toFixed(2) + '/mes)' : '');
+
     var infoSuscripcion = '<span class="org-info-linea">Plan: <strong>' + (e.plan_nombre || e.plan) + '</strong>' +
-      (e.precio_mensual_usd ? ' ($' + Number(e.precio_mensual_usd).toFixed(2) + '/mes)' : '') + '</span>' +
+      textoPrecioPlan + '</span>' +
       (e.estado_suscripcion === 'trial' && e.fecha_fin_trial ? '<span class="org-info-linea">Trial vence: ' + formatearFecha(e.fecha_fin_trial) + '</span>' : '') +
       (e.estado_suscripcion === 'activa' && e.fecha_proxima_renovacion ? '<span class="org-info-linea">Proxima renovacion: ' + formatearFecha(e.fecha_proxima_renovacion) + '</span>' : '') +
       (e.suspendida_manualmente && e.motivo_suspension ? '<span class="org-suspendida-motivo">Motivo: ' + e.motivo_suspension + '</span>' : '');
